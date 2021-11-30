@@ -20,6 +20,13 @@ class TcpServer {
   void EventLoop();
 
  private:
+  struct ThreadArgs {
+    ThreadArgs(TcpServer* srv_in, int* sfd_in) : srv(srv_in), sfd(sfd_in) {}
+    TcpServer* srv = nullptr;
+    int* sfd = nullptr;
+  };
+
+  static void* ThreadWrapper(void*);
   virtual void HandleIoEvent(int) = 0;
 
  private:

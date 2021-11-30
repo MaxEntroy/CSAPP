@@ -18,20 +18,6 @@ TcpServer::TcpServer() : listen_sfd_(socket(PF_INET, SOCK_STREAM, 0)) {
   memset(&serv_addr_, 0, sizeof(serv_addr_));
 }
 
-static void child_handler(int) {
-  int status = 0;
-  waitpid(-1, &status, WNOHANG);
-}
-
-static void register_child_async_event() {
-  struct sigaction child_event;
-  child_event.sa_handler = &child_handler;
-  child_event.sa_flags = 0;
-  sigemptyset(&child_event.sa_mask);
-
-  sigaction(SIGCHLD, &child_event, NULL);
-}
-
 void TcpServer::Init(int port, int backlog) {
   // set reuse addr
   int option = 1;
@@ -56,9 +42,6 @@ void TcpServer::Init(int port, int backlog) {
   if(ret == -1) {
     perr_handling("listen", "error");
   }
-
-  // register child event
-  register_child_async_event();
 }
 
 void TcpServer::EventLoop() {
@@ -71,29 +54,31 @@ void TcpServer::EventLoop() {
     printf("Tcp server[localhost:%d] waiting...\n", ntohs(serv_addr_.sin_port));
 
     // accept
-    int clnt_sfd = accept(listen_sfd_, (struct sockaddr*) &clnt_addr, &clnt_addr_len);
-    if (clnt_sfd == -1) {
+    int* clnt_sfd = new int{};
+    *clnt_sfd = accept(listen_sfd_, (struct sockaddr*) &clnt_addr, &clnt_addr_len);
+    if (*clnt_sfd == -1) {
       continue;
     }
     printf("[%s:%d] connected.\n", inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
 
-    pid_t pid = fork();
-    if (pid == -1) {
-      close(clnt_sfd);
-      continue;
-    }
-
-    if (!pid) {
-      // IO
-      HandleIoEvent(clnt_sfd);
-
-      close(clnt_sfd);
-      printf("[%s:%d] disconnected.\n", inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
-      return;
-    } else {
-      close(clnt_sfd);
+    ThreadArgs* args = new ThreadArgs(this, clnt_sfd);
+    if (pthread_create(nullptr, nullptr, ThreadWrapper, static_cast<void*>(args))) {
+      perr_handling("pthread_create", "error");
     }
   }
+}
+
+void* TcpServer::ThreadWrapper(void* args) {
+  pthread_detach(pthread_self());
+
+  ThreadArgs* t_args = static_cast<ThreadArgs*>(args);
+  t_args->srv->HandleIoEvent(*t_args->sfd);
+
+  close(*t_args->sfd);
+  delete t_args->sfd;
+  delete t_args;
+
+  return nullptr;
 }
 
 }  // namespace cal
