@@ -2,6 +2,10 @@ syntax = "proto2";
 
 package cal;
 
+message CalResHeader {
+  required fixed32 msg_len = 1;
+};
+
 message CalRes {
   required string seqno = 1;
   optional int32 result = 2;
