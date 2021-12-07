@@ -1,5 +1,7 @@
 #include "app/cal_server.h"
 
+#include "common/io_aux.h"
+
 #include "proto/cal_req.pb.h"
 #include "proto/cal_res.pb.h"
 
@@ -16,20 +18,21 @@ void CalServer::HandleIoEvent(int clnt_sfd) {
   SendRes(clnt_sfd, res);
 }
 
-//void CalServer::RecvReq(int clnt_sfd, CalReq* req) {
-//  // recv cal header
-//  char buf[MSG_HEAD_SZ];
-//  utils::io_read_n(clnt_sfd, buf, MSG_HEAD_SZ);
-//  cal::CalHeader cal_header;
-//  cal_header.ParseFromArray(buf, MSG_HEAD_SZ);
-//
-//  // recv cal req
-//  int req_len = cal_header.msg_len();
-//  std::string req_buf(req_len, ' ');
-//  utils::io_read_n(clnt_sfd, &req_buf[0], req_len);
-//  req->ParseFromString(req_buf);
-//}
-//
+void CalServer::RecvReq(int clnt_sfd, CalReq* req) {
+  // recv cal header
+  constexpr int kHeaderLen = 5;
+  std::string header_buf(kHeaderLen, ' ');
+  io_read_n(clnt_sfd, &header_buf[0], kHeaderLen);
+  CalReqHeader req_header;
+  req_header.ParseFromString(header_buf);
+
+  // recv cal req
+  int req_len = req_header.msg_len();
+  std::string req_buf(req_len, ' ');
+  io_read_n(clnt_sfd, &req_buf[0], req_len);
+  req->ParseFromString(req_buf);
+}
+
 //void CalServer::DoCal(const CalReq& req, CalRes* res) { res->set_seqno("2");
 //
 //  int sz = req.opnd_arr_size();
