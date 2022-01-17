@@ -49,6 +49,7 @@ void TcpServer::EventLoop() {
   struct sockaddr_in clnt_addr;
   memset(&clnt_addr, 0, sizeof(clnt_addr));
   socklen_t clnt_addr_len = 0;
+  pthread_t tid = 0;
 
   while(1) {
     printf("Tcp server[localhost:%d] waiting...\n", ntohs(serv_addr_.sin_port));
@@ -60,19 +61,22 @@ void TcpServer::EventLoop() {
       continue;
     }
     printf("[%s:%d] connected.\n", inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
-
+    std::cout << "Checkpoint: accpet is done." << std::endl;
     ThreadArgs* args = new ThreadArgs(this, clnt_sfd);
-    if (pthread_create(nullptr, nullptr, ThreadWrapper, static_cast<void*>(args))) {
+    if (pthread_create(&tid, nullptr, ThreadWrapper, static_cast<void*>(args))) {
       perr_handling("pthread_create", "error");
     }
+    std::cout << "Checkpoint: thread_create is done." << std::endl;
   }
 }
 
 void* TcpServer::ThreadWrapper(void* args) {
   pthread_detach(pthread_self());
 
+  std::cout << "Checkpoint: Detach is done." << std::endl;
   ThreadArgs* t_args = static_cast<ThreadArgs*>(args);
   t_args->srv->HandleIoEvent(*t_args->sfd);
+  std::cout << "Checkpoint: HandleIOEvent is done." << std::endl;
 
   close(*t_args->sfd);
   delete t_args->sfd;

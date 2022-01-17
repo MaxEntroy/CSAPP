@@ -10,12 +10,14 @@ namespace cal {
 void CalServer::HandleIoEvent(int clnt_sfd) {
   CalReq req;
   CalRes res;
-
   RecvReq(clnt_sfd, &req);
+  std::cout << "Checkpoint: RecvReq is done." << std::endl;
 
   DoCal(req, &res);
+  std::cout << "Checkpoint: DoCal is done." << std::endl;
 
   SendRes(clnt_sfd, res);
+  std::cout << "Checkpoint: SendRes is done." << std::endl;
 }
 
 void CalServer::RecvReq(int clnt_sfd, CalReq* req) {

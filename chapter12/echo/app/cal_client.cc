@@ -14,8 +14,11 @@ void CalClient::HandleIoEvent(int clnt_sfd) {
   CalRes res;
 
   MakeReq(&req);
+  std::cout << "Checkpoint: MakeReq is done." << std::endl;
   SendReq(clnt_sfd, req);
+  std::cout << "Checkpoint: SendReq is done." << std::endl;
   RecvRes(clnt_sfd, &res);
+  std::cout << "Checkpoint: Recv is done." << std::endl;
   ShowRes(res);
 }
 
