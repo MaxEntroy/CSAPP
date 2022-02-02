@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <iostream>
+
 namespace cal {
 
 void io_read_n(int fd, char buf[], int n) {
@@ -23,7 +25,7 @@ void io_read_n(int fd, char buf[], int n) {
 
 void io_write_n(int fd, char buf[], int n) {
   int ready = 0;
-  while(ready < 0) {
+  while(ready < n) {
     int nwrite = write(fd, buf + ready, n - ready);
     if (nwrite == -1) {
       if (errno == EAGAIN)
@@ -35,7 +37,6 @@ void io_write_n(int fd, char buf[], int n) {
     else
       ready += nwrite;
   }
-
 }
 
 }  // namespace cal
